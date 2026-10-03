@@ -8,7 +8,7 @@ from PySide import QtWidgets
 DEFAULT_ROLLER_COUNT = 35
 DEFAULT_ROTOR_RADIUS = 68  # [mm]
 DEFAULT_ROLLER_RADIUS = 3.3  # [mm]
-DEFAULT_EXCENTRICITY = 1.5  # [mm]
+DEFAULT_ECCENTRICITY = 1.5  # [mm]
 DEFAULT_PARAMETRIC_RESOLUTION = 5000
 DEFAULT_DEBUGGING: bool = False
 
@@ -53,16 +53,16 @@ class ParameterDialog(QtWidgets.QDialog):
         self.roller_radius.setToolTip("Radius of the rollers")
         layout.addRow("Roller radius:", self.roller_radius)
 
-        # excentricity
-        self.excentricity = QtWidgets.QDoubleSpinBox()
-        self.excentricity.setRange(0.001, 1000000.0)
-        self.excentricity.setDecimals(3)
-        self.excentricity.setValue(DEFAULT_EXCENTRICITY)
-        self.excentricity.setSuffix(" mm")
-        self.excentricity.setToolTip(
-            "excentricity (offset) from the input shaft to the center of the rotor"
+        # eccentricity
+        self.eccentricity = QtWidgets.QDoubleSpinBox()
+        self.eccentricity.setRange(0.001, 1000000.0)
+        self.eccentricity.setDecimals(3)
+        self.eccentricity.setValue(DEFAULT_ECCENTRICITY)
+        self.eccentricity.setSuffix(" mm")
+        self.eccentricity.setToolTip(
+            "eccentricity (offset) from the input shaft to the center of the rotor"
         )
-        layout.addRow("excentricity / offset:", self.excentricity)
+        layout.addRow("eccentricity / offset:", self.eccentricity)
 
         # Parametrization steps
         self.parametric_resolution = QtWidgets.QSpinBox()
@@ -93,17 +93,17 @@ class ParameterDialog(QtWidgets.QDialog):
 
 
 class Epitrochoid:
-    def __init__(self, rotor_radius, roller_radius, excentricity, roller_count):
+    def __init__(self, rotor_radius, roller_radius, eccentricity, roller_count):
         self.rotor_radius = rotor_radius  # radius of the Rotor
         self.roller_radius = roller_radius  # radius of the Rollers
         self.roller_count = roller_count  # number of Rollers
-        self.excentricity = excentricity  # excentricity (or offset) from the Input Shaft to the center of the Rotor
+        self.eccentricity = eccentricity  # eccentricity (or offset) from the Input Shaft to the center of the Rotor
 
     def psi(self, theta):
         return atan(
             sin((self.roller_count - 1) * theta)
             / (
-                (self.rotor_radius / (self.excentricity * self.roller_count))
+                (self.rotor_radius / (self.eccentricity * self.roller_count))
                 - cos((self.roller_count - 1) * theta)
             )
         )
@@ -113,7 +113,7 @@ class Epitrochoid:
         return (
             self.rotor_radius * cos(theta)
             - self.roller_radius * cos(theta - Psi)
-            - self.excentricity * cos(self.roller_count * theta)
+            - self.eccentricity * cos(self.roller_count * theta)
         )
 
     def y(self, theta):
@@ -121,7 +121,7 @@ class Epitrochoid:
         return (
             -self.rotor_radius * sin(theta)
             + self.roller_radius * sin(theta - Psi)
-            + self.excentricity * sin(self.roller_count * theta)
+            + self.eccentricity * sin(self.roller_count * theta)
         )
 
 
@@ -164,10 +164,10 @@ def main():
     roller_count = dialog.roller_count.value()
     rotor_radius = dialog.rotor_radius.value()
     roller_radius = dialog.roller_radius.value()
-    excentricity = dialog.excentricity.value()
+    eccentricity = dialog.eccentricity.value()
     parametric_resolution = dialog.parametric_resolution.value()
 
-    epi = Epitrochoid(rotor_radius, roller_radius, excentricity, roller_count)
+    epi = Epitrochoid(rotor_radius, roller_radius, eccentricity, roller_count)
     es = EpitrochoidSketcher(epi, parametric_resolution)
     es.run()
 
