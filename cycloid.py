@@ -1,4 +1,5 @@
 from math import atan, cos, pi, sin
+from uuid import uuid4
 
 import FreeCAD as App
 import Part
@@ -11,6 +12,9 @@ DEFAULT_ROLLER_RADIUS = 3.3  # [mm]
 DEFAULT_ECCENTRICITY = 1.5  # [mm]
 DEFAULT_PARAMETRIC_RESOLUTION = 5000
 DEFAULT_DEBUGGING: bool = False
+
+CYCLOID_ID = uuid4().hex[:8]
+SKETCH_NAME = "CycloidSketch-" + CYCLOID_ID
 
 
 def rescale_func(x, roller_count: int, factor: float = 0.7):
@@ -53,7 +57,7 @@ class ParameterDialog(QtWidgets.QDialog):
         self.roller_radius.setToolTip("Radius of the rollers")
         layout.addRow("Roller radius:", self.roller_radius)
 
-        # eccentricity
+        # Eccentricity
         self.eccentricity = QtWidgets.QDoubleSpinBox()
         self.eccentricity.setRange(0.001, 1000000.0)
         self.eccentricity.setDecimals(3)
@@ -93,11 +97,19 @@ class ParameterDialog(QtWidgets.QDialog):
 
 
 class Epitrochoid:
-    def __init__(self, rotor_radius, roller_radius, eccentricity, roller_count):
-        self.rotor_radius = rotor_radius  # radius of the Rotor
-        self.roller_radius = roller_radius  # radius of the Rollers
-        self.roller_count = roller_count  # number of Rollers
-        self.eccentricity = eccentricity  # eccentricity (or offset) from the Input Shaft to the center of the Rotor
+    def __init__(
+        self,
+        rotor_radius,
+        roller_radius,
+        eccentricity,
+        roller_count,
+    ):
+        self.rotor_radius = rotor_radius
+        self.roller_radius = roller_radius
+        self.roller_count = roller_count
+        self.eccentricity = eccentricity
+
+        self.label = "Cycloid"
 
     def psi(self, theta):
         return atan(
@@ -110,6 +122,7 @@ class Epitrochoid:
 
     def x(self, theta):
         Psi = self.psi(theta)
+
         return (
             self.rotor_radius * cos(theta)
             - self.roller_radius * cos(theta - Psi)
@@ -118,6 +131,7 @@ class Epitrochoid:
 
     def y(self, theta):
         Psi = self.psi(theta)
+
         return (
             -self.rotor_radius * sin(theta)
             + self.roller_radius * sin(theta - Psi)
@@ -130,7 +144,13 @@ class EpitrochoidSketcher:
         self.steps = steps
         self.epitrochoid = epitrochoid
         self.doc = App.ActiveDocument
-        self.sketch = self.doc.addObject("Sketcher::SketchObject", "Cycloid")
+
+        self.sketch = self.doc.addObject(
+            "Sketcher::SketchObject",
+            SKETCH_NAME,
+        )
+        self.sketch.Label = epitrochoid.label
+
 
     def run(self):
         # generate coordinates
@@ -181,6 +201,7 @@ def main():
             _fig, _ax = plt.subplots(figsize=(7, 7))
             plt.plot(xList, yList)
             plt.show()
+
         except Exception:
             App.Console.PrintError(
                 "Install matplotlib and / or numpy for debugging mode to work."
